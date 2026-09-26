@@ -1,0 +1,25 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  portal:
+    build: .
+    command: uvicorn demo_portal.app:app --host 0.0.0.0 --port 8000
+    environment:
+      PORTAL_SLOW: "1"
+    ports:
+      - "8000:8000"
+
+  worker:
+    build: .
+    depends_on: [redis, portal]
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      PORTAL_URL: http://portal:8000
+      MAX_ATTEMPTS: "3"
+    volumes:
+      - ./artifacts:/app/artifacts
+    deploy:
+      replicas: 2
